@@ -1,7 +1,9 @@
 package com.adriel.picpaydesafiobackend.transaction;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.adriel.picpaydesafiobackend.exception.InvalidTransactionException;
 import com.adriel.picpaydesafiobackend.wallet.Wallet;
 import com.adriel.picpaydesafiobackend.wallet.WalletRepository;
 import com.adriel.picpaydesafiobackend.wallet.WalletType;
@@ -17,6 +19,7 @@ public class TransactionService {
         this.walletRepository = walletRepository;
     }
 
+    @Transactional
     public Transaction create(Transaction transaction) {
 
         validade(transaction);
@@ -33,8 +36,8 @@ public class TransactionService {
         walletRepository.findById(transaction.payee())
                 .map(payee -> walletRepository.findById(transaction.payer())
                         .map(payer -> isTransactionValid(transaction, payer) ? transaction : null)
-                        .orElseThrow())
-                .orElseThrow();
+                        .orElseThrow(() -> new InvalidTransactionException("Invalid Transaction - %s".formatted(transaction))))
+                .orElseThrow(() -> new InvalidTransactionException("Invalid Transaction - %s".formatted(transaction)));
     }
 
     private boolean isTransactionValid(Transaction transaction, Wallet payer) {
